@@ -1,0 +1,116 @@
+# .pre-commit-config.yaml
+# Pre-commit hooks for image-quality-auditor
+#
+# Architecture:
+#   - Standard hooks (remote): formatting, security, sanity checks
+#   - Project tooling (local): ruff + mypy use .venv from `uv sync`
+#   - Single source of truth: tool configs live in pyproject.toml
+#
+# Usage:
+#   uv run pre-commit install              # one-time setup
+#   uv run pre-commit run --all-files      # run manually
+#   uv run pre-commit autoupdate           # update hook versions
+#
+# Bypass (use sparingly):
+#   git commit --no-verify -m "wip: ..."
+
+# ============================================================
+# Global config
+# ============================================================
+default_language_version:
+  python: python3.13
+
+default_stages: [pre-commit]
+
+# Files that have never been scanned
+exclude: |
+  (?x)^(
+    \.venv/.*|
+    \.git/.*|
+    htmlcov/.*|
+    output/.*|
+    \.pytest_cache/.*|
+    \.mypy_cache/.*|
+    \.ruff_cache/.*|
+    uv\.lock
+  )$
+
+# Fail fast - stop after the first error (faster feedback)
+fail_fast: false
+
+# ============================================================
+# Repos
+# ============================================================
+repos:
+  # ----------------------------------------------------------
+  # Sanity checks — standard hooks
+  #  Fast, external, do not require .venv
+  # ----------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Text file
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+      # Syntax validation
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+
+      # Health and safety in the warehouse
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+
+      # Python-specific
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-docstring-first
+      - id: debug-statements
+      - id: name-tests-test
+        args: [--pytest-test-first]
+  # ----------------------------------------------------------
+  # Ruff — lint + format (local, use pyproject.toml)
+  # ----------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff (lint)
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff (format)
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+  # ----------------------------------------------------------
+  # Mypy — type check (local, full dependencies from .venv)
+  # A heavier hook — triggers on pre-push
+  # ----------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+        args: [src, tests]
+        stages: [pre-push]
+# ============================================================
+# CI behavior
+# ============================================================
+ci:
+  autofix_commit_msg: "style: auto-fixes from pre-commit hooks"
+  autoupdate_commit_msg: "chore: pre-commit autoupdate"
+  autoupdate_schedule: monthly
