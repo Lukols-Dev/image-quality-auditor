@@ -2,6 +2,8 @@
 name = "image-quality-auditor"
 version = "0.1.0"
 description = "Production-grade CLI tool for auditing image datasets quality — built for AI Vision pipelines (Computer Vision portfolio project)"
+license = "MIT"
+license-files = ["LICENSE"]
 readme = "README.md"
 authors = [
     { name = "Łukasz Olszewski", email = "lukaszolszewski96@gmail.com" }
