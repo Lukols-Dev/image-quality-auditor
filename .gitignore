@@ -1,0 +1,95 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ============================================================
+# Virtual environments
+# ============================================================
+.venv/
+venv/
+env/
+ENV/
+
+# ============================================================
+# uv
+# ============================================================
+# uv.lock IS committed (lockfile dla reprodukowalności)
+# .python-version IS committed (pinna wersja Pythona)
+
+# ============================================================
+# Build / distribution
+# ============================================================
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+*.whl
+
+# ============================================================
+# Testing & coverage
+# ============================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.tox/
+.nox/
+
+# ============================================================
+# Type checking
+# ============================================================
+.mypy_cache/
+.dmypy.json
+.pyre/
+.ruff_cache/
+
+# ============================================================
+# IDE / Editors
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ============================================================
+# Project-specific (image-quality-auditor)
+# ============================================================
+# Output folder generowany przez CLI
+output/
+reports/
+
+# Test fixtures (duże zdjęcia testowe)
+tests/fixtures/large_images/
+
+# Logi
+*.log
+logs/
+
+# Środowiskowe (sekrety, lokalne configi)
+.env
+.env.local
+.env.*.local
+
+# Klient image data (NeuroFace zdjęcia — nie publikujemy!)
+data/
+patients/
+photos/
