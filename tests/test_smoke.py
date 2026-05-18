@@ -33,6 +33,6 @@ class TestPackageInfrastructure:
         command maps to image_quality_auditor:main. This test verifies
         the symbol exists.
         """
-        from image_quality_auditor import main
+        import image_quality_auditor
 
-        assert callable(main), "main must be callable"
+        assert callable(image_quality_auditor.main), "main must be callable"
