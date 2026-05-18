@@ -1,0 +1,136 @@
+# Continuous Integration workflow
+#
+# Triggers:
+#   - Pull requests targeting main (all events: opened, synchronize, reopened)
+#   - Pushes to main (post-merge validation)
+#
+# Jobs:
+#   - lint:    Pre-commit hooks (ruff, sanity checks, etc.)
+#   - typecheck: Mypy strict mode
+#   - test:    Pytest with coverage
+#
+# Architecture:
+#   Each job runs in isolation. Faster jobs (lint) fail fast,
+#   slower jobs (test) only run if quick checks pass via 'needs'.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel in-progress runs when a new commit is pushed to the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal permissions — security best practice
+permissions:
+  contents: read
+
+jobs:
+  # ============================================================
+  # Lint & format check
+  # Runs pre-commit hooks (same as local pre-commit)
+  # ============================================================
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run pre-commit hooks
+        run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  # ============================================================
+  # Type check
+  # Mypy strict mode on src and tests
+  # ============================================================
+  typecheck:
+    name: Type check (mypy strict)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: lint
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run mypy
+        run: uv run mypy src tests
+
+  # ============================================================
+  # Test
+  # Pytest with coverage; fails if coverage drops below threshold
+  # ============================================================
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13"]
+        # TODO: Add "3.14" once OpenCV ships prebuilt wheels for it
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run pytest with coverage
+        run: |
+          uv run pytest \
+            --cov=image_quality_auditor \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=0
+
+      # TODO: Re-enable once code is written (currently no tests = 0% coverage)
+      # - name: Upload coverage to artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-report-py${{ matrix.python-version }}
+      #     path: coverage.xml

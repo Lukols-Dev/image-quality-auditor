@@ -1,0 +1,62 @@
+# Dependabot configuration
+#
+# Automatically opens PRs when:
+#   - Python dependencies have updates (pyproject.toml + uv.lock)
+#   - GitHub Actions versions have updates
+#
+# Strategy: weekly batched PRs to avoid PR spam
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  # ----------------------------------------------------------
+  # Python dependencies (managed by uv)
+  # ----------------------------------------------------------
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 5
+    versioning-strategy: "increase"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      # Group all dev dependency updates into one PR
+      dev-dependencies:
+        dependency-type: "development"
+      # Group minor + patch production updates
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ----------------------------------------------------------
+  # GitHub Actions versions
+  # ----------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
