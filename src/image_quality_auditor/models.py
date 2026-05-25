@@ -25,6 +25,7 @@ Design principles:
 from __future__ import annotations
 
 from enum import StrEnum
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -130,3 +131,79 @@ class ImageMetrics(BaseModel):
         ge=0.0,
         description="Variance of the Laplacian; higher means sharper",
     )
+
+
+# ============================================================
+# Entity (per-image record)
+# ============================================================
+
+
+class ImageMetadata(BaseModel):
+    """Complete audit record for a single image file.
+
+    This is an entity — identified primarily by file_path. Combines
+    filesystem facts (path, size, format) with derived measurements
+    (dimensions, metrics) and a final quality classification.
+
+    Optionality convention:
+        - dimensions and metrics are None for CORRUPTED files
+        - error holds the failure reason when quality_category == CORRUPTED
+        - quality_category is always set; CORRUPTED indicates decode failure
+
+    The frozen=True config makes instances immutable; pipeline stages
+    pass these records by value, never mutating them.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    # Filesystem facts (always available)
+    file_path: Path = Field(description="Absolute path to the source file")
+    filename_original: str = Field(
+        min_length=1,
+        description="Original filename including extension",
+    )
+    filename_anonymized: str = Field(
+        min_length=1,
+        description="Privacy-safe filename (SHA256 hash + original extension)",
+    )
+    file_size_bytes: int = Field(
+        ge=0,
+        description="File size in bytes",
+    )
+    file_format: str = Field(
+        description=("Detected image format (e.g., 'JPEG', 'PNG'); 'UNKNOWN' when not detected"),
+    )
+
+    # Derived data (None if image could not be decoded)
+    dimensions: ImageDimensions | None = Field(
+        default=None,
+        description="Pixel dimensions; None when decode failed",
+    )
+    metrics: ImageMetrics | None = Field(
+        default=None,
+        description="Quality metrics; None when decode failed",
+    )
+
+    # Classification (always present)
+    quality_category: QualityCategory = Field(
+        description="Final quality classification for this image",
+    )
+    error: str | None = Field(
+        default=None,
+        description="Error message; populated for CORRUPTED files",
+    )
+
+    @property
+    def is_corrupted(self) -> bool:
+        """True when the image could not be decoded into metrics."""
+        return self.quality_category is QualityCategory.CORRUPTED
+
+    @property
+    def file_size_kb(self) -> float:
+        """File size in kilobytes (binary, 1 KB = 1024 B)."""
+        return self.file_size_bytes / 1024
+
+    @property
+    def file_size_mb(self) -> float:
+        """File size in megabytes (binary, 1 MB = 1024 KB)."""
+        return self.file_size_kb / 1024
