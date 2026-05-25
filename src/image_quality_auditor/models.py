@@ -207,3 +207,96 @@ class ImageMetadata(BaseModel):
     def file_size_mb(self) -> float:
         """File size in megabytes (binary, 1 MB = 1024 KB)."""
         return self.file_size_kb / 1024
+
+
+# ============================================================
+# Aggregate models (whole-folder summary)
+# ============================================================
+
+
+class CategoryCounts(BaseModel):
+    """Per-category image counters for an audit run.
+
+    A value object aggregating how many images fell into each
+    QualityCategory. Constructed once after all images are processed;
+    immutable thereafter.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    good: int = Field(ge=0, default=0)
+    acceptable: int = Field(ge=0, default=0)
+    poor: int = Field(ge=0, default=0)
+    corrupted: int = Field(ge=0, default=0)
+
+    @property
+    def total(self) -> int:
+        """Total number of images counted across all categories."""
+        return self.good + self.acceptable + self.poor + self.corrupted
+
+    @property
+    def usable(self) -> int:
+        """Images suitable for downstream use (GOOD + ACCEPTABLE)."""
+        return self.good + self.acceptable
+
+
+class AuditSummary(BaseModel):
+    """Aggregate statistics for a complete audit run.
+
+    Computed once at the end of an audit. Holds counts, timing, and
+    averaged metrics across non-corrupted images. Used as the data
+    source for the HTML report summary section.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    total_files_scanned: int = Field(
+        ge=0,
+        description="Total number of files the scanner attempted to process",
+    )
+    counts: CategoryCounts = Field(
+        description="Per-category image counters",
+    )
+    duration_seconds: float = Field(
+        ge=0.0,
+        description="Wall-clock duration of the audit run",
+    )
+
+    # Averaged metrics across non-corrupted images (None if all corrupted)
+    mean_brightness_avg: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=255.0,
+        description="Average mean_brightness across non-corrupted images",
+    )
+    contrast_std_avg: float | None = Field(
+        default=None,
+        ge=0.0,
+        description="Average contrast_std across non-corrupted images",
+    )
+    sharpness_avg: float | None = Field(
+        default=None,
+        ge=0.0,
+        description="Average sharpness_laplacian_variance across non-corrupted images",
+    )
+
+
+class AuditResult(BaseModel):
+    """Top-level result of a complete audit run.
+
+    The output object returned by the audit pipeline. Combines per-image
+    records with aggregate summary statistics. Handed to the reporter
+    layer for serialization (CSV, HTML).
+
+    The images field is a tuple (not list) to enforce immutability
+    consistently with the frozen model configuration.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    images: tuple[ImageMetadata, ...] = Field(
+        description="Per-image audit records (tuple for deep immutability)",
+    )
+    summary: AuditSummary = Field(
+        description="Aggregate statistics over all images",
+    )
