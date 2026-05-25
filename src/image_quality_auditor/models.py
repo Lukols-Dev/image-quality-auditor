@@ -26,6 +26,8 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from pydantic import BaseModel, ConfigDict, Field
+
 # ============================================================
 # Enums
 # ============================================================
@@ -48,3 +50,43 @@ class QualityCategory(StrEnum):
     ACCEPTABLE = "acceptable"
     POOR = "poor"
     CORRUPTED = "corrupted"
+
+
+# ============================================================
+# Value objects (small immutable data carriers)
+# ============================================================
+
+
+class ImageDimensions(BaseModel):
+    """Physical pixel dimensions of an image.
+
+    A value object - equality is based on width and height values.
+    Immutable; once created, dimensions cannot change.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    width: int = Field(gt=0, description="Image width in pixels")
+    height: int = Field(gt=0, description="Image height in pixels")
+
+    @property
+    def total_pixels(self) -> int:
+        """Total pxels count (width x height)."""
+        return self.width * self.height
+
+    @property
+    def aspect_ratio(self) -> float:
+        """Width-to-height ratio (e.g., 1.78 for 16:9)."""
+        return self.width / self.height
+
+    def meets_minimum(self, min_width: int, min_height: int) -> bool:
+        """Check whether dimensions meet the given minimum requirements.
+
+        Args:
+            min_width: Minimum required width in pixels.
+            min_height: Minimum required height in pixels.
+
+        Returns:
+            True if both width >= min_width and height >= min_height.
+        """
+        return self.width >= min_width and self.height >= min_height
