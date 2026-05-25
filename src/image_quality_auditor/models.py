@@ -90,3 +90,43 @@ class ImageDimensions(BaseModel):
             True if both width >= min_width and height >= min_height.
         """
         return self.width >= min_width and self.height >= min_height
+
+
+class ImageMetrics(BaseModel):
+    """Quality metrics computed from image pixel data.
+
+    All metrics are derived from the grayscale representation of the image.
+    This is a value object — equality is based on the metric values.
+
+    Mathematical definitions:
+        mean_brightness:
+            Arithmetic mean of pixel values across the image.
+            Range: 0.0-255.0 for standard uint8 images.
+            Low values indicate underexposure, high values overexposure.
+
+        contrast_std:
+            Standard deviation of pixel values (sqrt of variance).
+            Higher values indicate higher contrast.
+            Values < 20 suggest a near-monotone image.
+
+        sharpness_laplacian_variance:
+            Variance of the Laplacian of the image (cv2.Laplacian then .var()).
+            A standard blur-detection metric: higher means sharper.
+            Values < 100 typically indicate significant blur.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    mean_brightness: float = Field(
+        ge=0.0,
+        le=255.0,
+        description="Mean pixel value across the image (0-255 for uint8)",
+    )
+    contrast_std: float = Field(
+        ge=0.0,
+        description="Standard deviation of pixel values; proxy for contrast",
+    )
+    sharpness_laplacian_variance: float = Field(
+        ge=0.0,
+        description="Variance of the Laplacian; higher means sharper",
+    )
