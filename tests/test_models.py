@@ -37,8 +37,8 @@ class TestQualityCategory:
 
     def test_string_equality(self) -> None:
         """StrEnum members compare equal to their string values."""
-        assert QualityCategory.GOOD == "good"
-        assert QualityCategory.CORRUPTED == "corrupted"
+        assert QualityCategory.GOOD == "good"  # type: ignore[comparison-overlap]
+        assert QualityCategory.CORRUPTED == "corrupted"  # type: ignore[comparison-overlap]
 
     def test_construction_from_string(self) -> None:
         """A category can be constructed from its string value."""
@@ -303,7 +303,7 @@ class TestImageMetadata:
     def test_path_coercion_from_string(self) -> None:
         """A string file_path is coerced to a Path object."""
         meta = ImageMetadata(
-            file_path="/photos/test.png",
+            file_path="/photos/test.png",  # type: ignore[arg-type]
             filename_original="test.png",
             filename_anonymized="aa.png",
             file_size_bytes=100,
@@ -364,7 +364,7 @@ class TestImageMetadata:
     def test_missing_required_field_rejected(self) -> None:
         """Omitting a required field raises ValidationError."""
         with pytest.raises(ValidationError):
-            ImageMetadata(
+            ImageMetadata(  # type: ignore[call-arg]
                 file_path=Path("/a.jpg"),
                 filename_anonymized="x.jpg",
                 file_size_bytes=100,
@@ -419,7 +419,7 @@ class TestCategoryCounts:
         """Counts are immutable after creation."""
         counts = CategoryCounts(good=10)
         with pytest.raises(ValidationError):
-            counts.good = 20  # type: ignore[misc]
+            counts.good = 20
 
 
 class TestAuditSummary:
@@ -487,7 +487,7 @@ class TestAuditSummary:
             duration_seconds=1.0,
         )
         with pytest.raises(ValidationError):
-            summary.duration_seconds = 5.0  # type: ignore[misc]
+            summary.duration_seconds = 5.0
 
 
 class TestAuditResult:
@@ -515,7 +515,7 @@ class TestAuditResult:
     def test_creation_from_list(self) -> None:
         """images provided as a list are accepted."""
         result = AuditResult(
-            images=[
+            images=[  # type: ignore[arg-type]
                 self._sample_image(QualityCategory.GOOD),
                 self._sample_image(QualityCategory.CORRUPTED),
             ],
@@ -526,7 +526,7 @@ class TestAuditResult:
     def test_images_coerced_to_tuple(self) -> None:
         """A list of images is coerced to a tuple for immutability."""
         result = AuditResult(
-            images=[self._sample_image(QualityCategory.GOOD)],
+            images=[self._sample_image(QualityCategory.GOOD)],  # type: ignore[arg-type]
             summary=self._sample_summary(),
         )
         assert isinstance(result.images, tuple)
@@ -534,16 +534,16 @@ class TestAuditResult:
     def test_images_are_read_only(self) -> None:
         """The images tuple does not support item assignment."""
         result = AuditResult(
-            images=[self._sample_image(QualityCategory.GOOD)],
+            images=[self._sample_image(QualityCategory.GOOD)],  # type: ignore[arg-type]
             summary=self._sample_summary(),
         )
         with pytest.raises(TypeError):
-            result.images[0] = self._sample_image(QualityCategory.POOR)
+            result.images[0] = self._sample_image(QualityCategory.POOR)  # type: ignore[index]
 
     def test_is_frozen(self) -> None:
         """Result is immutable after creation."""
         result = AuditResult(
-            images=[self._sample_image(QualityCategory.GOOD)],
+            images=[self._sample_image(QualityCategory.GOOD)],  # type: ignore[arg-type]
             summary=self._sample_summary(),
         )
         with pytest.raises(ValidationError):
@@ -552,7 +552,7 @@ class TestAuditResult:
     def test_serialization_round_trip(self) -> None:
         """A result can be serialized to JSON and validated back."""
         original = AuditResult(
-            images=[self._sample_image(QualityCategory.GOOD)],
+            images=[self._sample_image(QualityCategory.GOOD)],  # type: ignore[arg-type]
             summary=self._sample_summary(),
         )
         json_str = original.model_dump_json()
