@@ -150,7 +150,7 @@ class TestComputeMetrics:
 
         metrics = compute_metrics(_uniform(128))
         with pytest.raises(ValidationError):
-            metrics.mean_brightness = 200.0  # type: ignore[misc]
+            metrics.mean_brightness = 200.0
 
     def test_black_image_metrics(self) -> None:
         """A black image yields brightness 0, contrast 0, sharpness ~0."""
