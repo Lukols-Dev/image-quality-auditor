@@ -9,23 +9,11 @@ local .env file.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
-from image_quality_auditor.config import AuditorConfig
-
-
-def make_config(**overrides: Any) -> AuditorConfig:
-    """Build an AuditorConfig with .env loading disabled.
-
-    BaseSettings accepts `_env_file` at runtime, but mypy synthesizes
-    AuditorConfig.__init__ from the model fields alone (pydantic's
-    metaclass is @dataclass_transform-decorated), so the keyword is
-    invisible to it. Suppress that once here rather than at every call.
-    """
-    return AuditorConfig(_env_file=None, **overrides)  # type: ignore[call-arg]
+from tests.conftest import make_config
 
 
 class TestDefaults:

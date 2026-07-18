@@ -25,12 +25,13 @@ from image_quality_auditor.scanner import (
     scan_file,
     scan_folder,
 )
+from tests.conftest import make_config
 
 
 @pytest.fixture
 def config() -> AuditorConfig:
     """A default configuration isolated from any local .env file."""
-    return AuditorConfig(_env_file=None)
+    return make_config()
 
 
 # ============================================================
@@ -196,7 +197,7 @@ class TestScanFile:
     def test_oversized_file_rejected(self, tmp_path: Path) -> None:
         """A file above the size limit is rejected before loading."""
         # Config with a tiny max size so any real image exceeds it.
-        tiny_config = AuditorConfig(_env_file=None, max_file_size_mb=0.0001)
+        tiny_config = make_config(max_file_size_mb=0.0001)
         path = tmp_path / "big.png"
         _write_image(path, _good_image())
 
