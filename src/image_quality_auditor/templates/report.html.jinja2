@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Quality Audit Report</title>
+<style>
+  :root {
+    --good: #2e7d32;
+    --acceptable: #f9a825;
+    --poor: #e64a19;
+    --corrupted: #757575;
+    --border: #e0e0e0;
+    --muted: #666;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 2rem;
+    color: #1a1a1a;
+    background: #fafafa;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+  .meta { color: var(--muted); font-size: 0.875rem; margin-bottom: 2rem; }
+  .cards { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    min-width: 8rem;
+  }
+  .card .value { font-size: 1.75rem; font-weight: 600; line-height: 1.2; }
+  .card .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  .card.good .value { color: var(--good); }
+  .card.acceptable .value { color: var(--acceptable); }
+  .card.poor .value { color: var(--poor); }
+  .card.corrupted .value { color: var(--corrupted); }
+  table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.875rem; }
+  th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    background: #f5f5f5;
+  }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .badge.good { background: var(--good); }
+  .badge.acceptable { background: var(--acceptable); }
+  .badge.poor { background: var(--poor); }
+  .badge.corrupted { background: var(--corrupted); }
+  .error { color: var(--poor); font-size: 0.8125rem; }
+  .empty { color: var(--muted); font-style: italic; padding: 2rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>Image Quality Audit Report</h1>
+<p class="meta">
+  {{ summary.total_files_scanned }} file(s) scanned in
+  {{ "%.2f"|format(summary.duration_seconds) }}s
+</p>
+
+<div class="cards">
+  <div class="card good">
+    <div class="value">{{ summary.counts.good }}</div>
+    <div class="label">Good</div>
+  </div>
+  <div class="card acceptable">
+    <div class="value">{{ summary.counts.acceptable }}</div>
+    <div class="label">Acceptable</div>
+  </div>
+  <div class="card poor">
+    <div class="value">{{ summary.counts.poor }}</div>
+    <div class="label">Poor</div>
+  </div>
+  <div class="card corrupted">
+    <div class="value">{{ summary.counts.corrupted }}</div>
+    <div class="label">Corrupted</div>
+  </div>
+  <div class="card">
+    <div class="value">{{ summary.counts.usable }}</div>
+    <div class="label">Usable</div>
+  </div>
+</div>
+
+{% if summary.mean_brightness_avg is not none %}
+<div class="cards">
+  <div class="card">
+    <div class="value">{{ "%.1f"|format(summary.mean_brightness_avg) }}</div>
+    <div class="label">Avg brightness</div>
+  </div>
+  <div class="card">
+    <div class="value">{{ "%.1f"|format(summary.contrast_std_avg) }}</div>
+    <div class="label">Avg contrast</div>
+  </div>
+  <div class="card">
+    <div class="value">{{ "%.0f"|format(summary.sharpness_avg) }}</div>
+    <div class="label">Avg sharpness</div>
+  </div>
+</div>
+{% endif %}
+
+{% if images %}
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Quality</th>
+      <th>Format</th>
+      <th class="num">Size (KB)</th>
+      <th class="num">Dimensions</th>
+      <th class="num">Brightness</th>
+      <th class="num">Contrast</th>
+      <th class="num">Sharpness</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for image in images %}
+    <tr>
+      <td>
+        <code>{{ image.filename_anonymized }}</code>
+        {% if image.error %}<div class="error">{{ image.error }}</div>{% endif %}
+      </td>
+      <td>
+        <span class="badge {{ image.quality_category.value }}">
+          {{ image.quality_category.value }}
+        </span>
+      </td>
+      <td>{{ image.file_format }}</td>
+      <td class="num">{{ "%.1f"|format(image.file_size_kb) }}</td>
+      <td class="num">
+        {% if image.dimensions %}
+          {{ image.dimensions.width }}&times;{{ image.dimensions.height }}
+        {% else %}&mdash;{% endif %}
+      </td>
+      <td class="num">
+        {% if image.metrics %}
+          {{ "%.1f"|format(image.metrics.mean_brightness) }}
+        {% else %}&mdash;{% endif %}
+      </td>
+      <td class="num">
+        {% if image.metrics %}
+          {{ "%.1f"|format(image.metrics.contrast_std) }}
+        {% else %}&mdash;{% endif %}
+      </td>
+      <td class="num">
+        {% if image.metrics %}
+          {{ "%.0f"|format(image.metrics.sharpness_laplacian_variance) }}
+        {% else %}&mdash;{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">No images were scanned.</p>
+{% endif %}
+
+</body>
+</html>
