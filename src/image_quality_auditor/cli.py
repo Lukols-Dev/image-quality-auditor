@@ -44,7 +44,7 @@ def audit(
 ) -> None:
     """Audit image quality in FOLDER and write reports."""
 
-    config = AuditorConfig(output_dir) if output_dir is not None else AuditorConfig()
+    config = AuditorConfig(output_dir=output_dir) if output_dir is not None else AuditorConfig()
 
     click.echo("Start scanning")
 
